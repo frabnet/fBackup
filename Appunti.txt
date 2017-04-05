@@ -1,0 +1,15 @@
+- Installare FreeFileSync in C:\FreeFileSync
+
+- Creare cartella C:\FreeFileSync\Logs
+
+- Copiare fbackup in C:\FreeFileSync\fbackup
+
+- Creare Task con FreeFileSync e salvarli in modalità batch all'interno di C:\FreeFileSync\fbackup\ es: CopiaNAS.ffs_batch
+
+- Creare il file INI copiando dall'esempio, con lo stesso dome del processo FFS (es: CopiaNAS.ini)
+
+- Nuova attività pianificata:
+
+c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe
+-NoProfile -Executionpolicy Bypass -File "c:\FreeFileSync\fbackup\backup.ps1" -nomeTask CopiaUSB
+c:\FreeFileSync\fbackup
