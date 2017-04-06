@@ -1,0 +1,1 @@
+c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -Executionpolicy Bypass -File "backup.ps1"
