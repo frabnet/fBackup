@@ -37,8 +37,10 @@ It requires FreeFileSync and PowerShell v4 or greater. Check Installation steps 
     __NOTE: This will also run FreeFileSync Job!__ To test a task without executing FreeFileSync (testing only E-Mail settings), you can set Enable=Test inside the .ini file. Remember to set it back after the test with the value you want it to be.
     
 * Create new Schedule Task with Windows Scheduler and select to Run a program:
-	Program/script: `c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe`
-	Add arguments: `-NoProfile -Executionpolicy Bypass -File "backup.ps1" -nomeTask CopyToNas`
+	```
+	Program/script: c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe
+	Add arguments: -NoProfile -Executionpolicy Bypass -File "backup.ps1" -nomeTask CopyToNas
+	Start in: c:\FreeFileSync\fbackup
+	```
 	*Change `CopyToNas` with the name of the task you want to run.*
-	Start in: `c:\FreeFileSync\fbackup`
 	
