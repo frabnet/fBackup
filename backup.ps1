@@ -5,6 +5,8 @@
 
 # -------------------------------------------------- Funzioni 
 
+#FIXME: Aggiornare la funzione con ultima versione https://github.com/lipkau/PsIni
+
 function Get-IniContent {  
     <#  
     .Synopsis  
@@ -126,9 +128,10 @@ function Espelli {
 
 function InvioEmail {
     param( [string]$from, [string]$to, [string]$subject, [string]$body,[string]$attachmentPath,[string]$server,[string]$serverPort,[string]$enableSSL )
-    
-    # https://philerb.com/2011/11/sending-mail-with-powershell/
-        
+
+    #Non funzionava con Aruba che utilizza Implicit SSL
+    #fix: http://nicholasarmstrong.com/2009/12/sending-email-with-powershell-implicit-and-explicit-ssl/
+
     #Controllo file Credenziali
     If (Test-Path $emailCredentialsFile) {
         $emailCredentials = Import-CliXml $emailCredentialsFile
@@ -137,40 +140,80 @@ function InvioEmail {
         $emailCredentials = Import-CliXml $emailCredentialsFile
     }
     $credentials = [Net.NetworkCredential]($emailCredentials)
-        
-    $emailMessage = New-Object System.Net.Mail.MailMessage
-    $emailMessage.From = $from
-    $emailMessage.To.Add($to)
-    $emailMessage.Subject = $subject
-    $emailMessage.IsBodyHtml = $false
-    $emailMessage.Body = $body
 
-    # Allegato
-    if ($attachmentPath -ne '') {
-        $emailMessage.Attachments.Add( $attachmentPath )
+    
+    if ($enableSSL -eq '0') {
+        # Set up server connection
+        $smtpClient = New-Object System.Net.Mail.SmtpClient $server, $serverPort
+        $smtpClient.EnableSsl = $false
+        $smtpClient.Timeout = $timeout
+        $smtpClient.UseDefaultCredentials = $false;
+        $smtpClient.Credentials = $credentials
+
+        $message = New-Object System.Net.Mail.MailMessage $from, $to, $subject, $body
+
+        # Allegato
+        if ($attachmentPath -ne '') {
+            $attachment = New-Object System.Net.Mail.Attachment $attachmentPath
+            $message.Attachments.Add($attachment)            
+        }
+
+        # Send the message
+        Write-Host -NoNewline "Invio email a $to... "
+        try
+        {
+            $smtpClient.Send($message)
+            Write-Output "Inviato."
+        }
+        catch
+        {
+            Write-Error $_
+            Write-Output "ERRORE."
+        }
+    } else {
+        # Load System.Web assembly
+        [System.Reflection.Assembly]::LoadWithPartialName("System.Web") > $null
+
+        # Create a new mail with the appropriate server settigns
+        $mail = New-Object System.Web.Mail.MailMessage
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpserver", $server)
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpserverport", $serverPort)
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpusessl", $true)
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendusername", $credentials.UserName)
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendpassword", $credentials.Password)
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout", $timeout / 1000)
+        # Use network SMTP server...
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendusing", 2)
+        # ... and basic authentication
+        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate", 1)
+
+        # Set up the mail message fields
+        $mail.From = $from
+        $mail.To = $to
+        $mail.Subject = $subject
+        $mail.Body = $body
+
+        # Allegato
+        if ($attachmentPath -ne '') {
+            # Convert to full path and attach file to message
+            $attachmentPath = (get-item $attachmentPath).FullName
+            $attachment = New-Object System.Web.Mail.MailAttachment $attachmentPath
+            $mail.Attachments.Add($attachment) > $null
+        }
+
+        # Send the message
+        Write-Host -NoNewline "Invio email a $to... "
+        try
+        {
+            [System.Web.Mail.SmtpMail]::Send($mail)
+            Write-Host  "Inviato."
+        }
+        catch
+        {
+            Write-Error $_
+            Write-Host  "ERRORE."
+        }
     }
-
-    # SSL
-    $enableSSLBool = $false 
-    if ($enableSSL -eq '1') {$enableSSLBool = $true }
-
-    $SMTPClient = New-Object System.Net.Mail.SmtpClient($server, $serverPort)
-    $SMTPClient.EnableSsl = $enableSSLBool
-    $SMTPClient.Credentials = $credentials
-
-    # Invio
-    Write-Host -NoNewline "Invio email a $to... "
-    try
-    {
-        $SMTPClient.Send($emailMessage)
-        Write-Host  "Inviato."
-    }
-    catch
-    {
-        Write-Error $_
-        Write-Host  "ERRORE."
-    }
-
 }
 
 function Comprimi {
@@ -185,14 +228,14 @@ function Comprimi {
 # -------------------------------------------------- Variabili task
 
 #FIXME: $LogGeneral = Join-Path $LogPath 'Gen.log' /PER UNIRE I PERCORSI - Elegante
-#FIXME: Controllare permessi di amministratore anche da Task Scheduler
 
-#http://ramblingcookiemonster.github.io/Task-Scheduler/
-$CurrentDir = (Get-Item -Path ".\" -Verbose).FullName
-$Date = Get-Date
-$Admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")
-$Whoami = whoami
-"$Date - Admin=$Admin User=$Whoami Cd=$CurrentDir" | Out-File "AdminLog.txt" -Append
+# Controllo se è stato lanciato correttamente http://ramblingcookiemonster.github.io/Task-Scheduler/
+
+#$CurrentDir = (Get-Item -Path ".\" -Verbose).FullName
+#$Date = Get-Date
+#$Admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")
+#$Whoami = whoami
+#"$Date - Admin=$Admin User=$Whoami Cd=$CurrentDir" | Out-File "AdminLog.txt" -Append
 
 $inifile = $nomeTask + '.ini'
 $conf = Get-IniContent $inifile
