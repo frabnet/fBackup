@@ -324,13 +324,10 @@ If ($ServiceWasRunning) {
 
 #Cerco l'ultimo file di log
 Write-Host -NoNewLine "Ricerca nuovo file... "
-Get-ChildItem -Path $Folder -Filter "*$nomeTask*" -File | Sort LastWriteTime –Descending | Select -First 1 | Foreach-Object { $LastLogFile = $_.Name }
+Get-ChildItem -Path "$Folder" -Filter "$nomeTask*log" | Sort LastWriteTime –Descending | Select -First 1 | Foreach-Object { $LastLogFile = $_.Name }
 $LastLogFile = $LastLogFile.Trim()
 Write-Host $LastLogFile
 $LastLogFile = $Folder + '\' + $LastLogFile
-
-#Compressione ultimo file di log
-Comprimi($LastLogFile)
 
 #Creazione corpo messaggio
 $Write = 0
@@ -352,6 +349,7 @@ If ($emailEnable -eq 'ONLYERROR') { if ($ffs_process.ExitCode -ne 0) { $toSend =
 if ($ffsReturnCode -eq 0) {
     $attachment = ''
 } else {
+    Comprimi($LastLogFile)
     $attachment = (Resolve-Path .\).Path + '\logs.zip'
     If ($emailToCcnErr -ne '') { InvioEmail $emailFrom $emailToCcnErr "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL }
 }
