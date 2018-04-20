@@ -229,7 +229,7 @@ function Comprimi {
 
 #FIXME: $LogGeneral = Join-Path $LogPath 'Gen.log' /PER UNIRE I PERCORSI - Elegante
 
-# Controllo se è stato lanciato correttamente http://ramblingcookiemonster.github.io/Task-Scheduler/
+#FIXME: Controllo se è stato lanciato correttamente con i diritti di admin http://ramblingcookiemonster.github.io/Task-Scheduler/
 
 #$CurrentDir = (Get-Item -Path ".\" -Verbose).FullName
 #$Date = Get-Date
@@ -283,7 +283,18 @@ ______________________________________________________________
     Write-Host "Ok."
     Comprimi('TestLog.txt')
     Remove-Item('TestLog.txt')
-    InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" logs.zip $emailSmtpServer $emailSmtpPort $emailSmtpSSL
+
+    if ($emailTo.Contains(';')) {
+        #Invio destinatari multipli
+        $emailTo.Split(';') | ForEach {
+            InvioEmail $emailFrom $_ "$msgSubject" "$msgBody" logs.zip $emailSmtpServer $emailSmtpPort $emailSmtpSSL
+        }
+    } else {
+       #Invio singolo
+       InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" logs.zip $emailSmtpServer $emailSmtpPort $emailSmtpSSL       
+    }
+
+    
     
     Read-Host -Prompt "Premere INVIO per uscire."    
     Exit
@@ -353,7 +364,19 @@ if ($ffsReturnCode -eq 0) {
     $attachment = (Resolve-Path .\).Path + '\logs.zip'
     If ($emailToCcnErr -ne '') { InvioEmail $emailFrom $emailToCcnErr "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL }
 }
-if ($toSend) { InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL }
+
+#Invio email
+if ($toSend) {    
+    if ($emailTo.Contains(';')) {
+        #Invio destinatari multipli
+        $emailTo.Split(';') | ForEach {
+            InvioEmail $emailFrom $_ "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL
+        }
+    } else {
+        #Invio singolo
+       InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL
+    }
+ }
 
 #Espulsione unità usb
 if ($usbDayToEject -eq (Get-Date).DayOfWeek -Or $usbDayToEject -eq 0 ) {
