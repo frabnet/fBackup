@@ -132,6 +132,9 @@ function InvioEmail {
     #Non funzionava con Aruba che utilizza Implicit SSL
     #fix: http://nicholasarmstrong.com/2009/12/sending-email-with-powershell-implicit-and-explicit-ssl/
 
+    #Sostituisco #computername# nell'oggetto
+    $subject -replace "#computername#","$env:computername"
+
     #Controllo file Credenziali
     If (Test-Path $emailCredentialsFile) {
         $emailCredentials = Import-CliXml $emailCredentialsFile
