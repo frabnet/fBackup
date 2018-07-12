@@ -13,7 +13,6 @@ It requires FreeFileSync and PowerShell v4 or greater. Check Installation steps 
 * Check current PowerShell version with the command `$PSVersionTable`.
     fBackup is tested on PowerShell 4 or greater. You can download v4 from [Microsoft website](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
 * Download and install FreeFileSync: https://www.freefilesync.org/download.php
-    __Be careful while installing__: The installer [advertises](https://www.freefilesync.org/faq.php#silent-ad) to install other applications.
     I suggest to install it in a convenient directory like `C:\FreeFileSync\`    
 * Create a Logs folder inside FreeFileSync folder, for example: `C:\FreeFileSync\Logs`
 * Unzip fBackup inside FreeFileSync folder: `C:\FreeFileSync\fBackup`
