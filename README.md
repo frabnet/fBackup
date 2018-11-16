@@ -19,22 +19,17 @@ It requires FreeFileSync and PowerShell v4 or greater. Check Installation steps 
 
 ## Task Creation
 
-* Create a new Job with FreeFileSync and save it as Batch Job.
-	While saving, set options:
-	```
-	Handle errors: Ignore
-	On completion: Close progress dialog
-	Save log: C:\FreeFileSync\Logs\
-	Limit: 100
-	```
-	Save it in `C:\FreeFileSync\fBackup\` with a simple name, like `CopyToNas.ffs_batch`
-	You can refer to FreeFileSync online [manual](https://www.freefilesync.org/manual.php?topic=schedule-a-batch-job) for more information.
-    
+* Create a new Job with FreeFileSync as you like.
+* In syncronization settings, please check:
+`[v] Replace default log path`
+And set the folder to ``C:\FreeFileSync\Logs\``
+* Save it as a Batch Job in `C:\FreeFileSync\fBackup\` with a simple name, like `CopyToNas.ffs_batch`
+* While saving, please check:
+	``Progress window: Close automatically``
+	``[v] Ignore errors``
 * Copy `fBackup\example_task.ini` and rename it the same name as the Batch Job you just saved (eg: `CopyToNas.ini`). Edit it to match your needs.
-
 * Optional but suggested*: You can test the task by running `test_task.cmd` and entering the name of the task you want to run.
     __NOTE: This will also run FreeFileSync Job!__ To test a task without executing FreeFileSync (testing only E-Mail settings), you can set Enable=Test inside the .ini file. Remember to set it back after the test with the value you want it to be.
-    
 * Create new Schedule Task with Windows Scheduler and select to Run a program:
 	```
 	Program/script: c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe
@@ -42,4 +37,3 @@ It requires FreeFileSync and PowerShell v4 or greater. Check Installation steps 
 	Start in: c:\FreeFileSync\fbackup
 	```
 	*Change `CopyToNas` with the name of the task you want to run.*
-	
