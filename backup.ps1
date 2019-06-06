@@ -3,117 +3,163 @@
     [string]$nomeTask
  ) 
 
-# -------------------------------------------------- Funzioni 
+#https://github.com/lipkau/PsIni/blob/master/PSIni/Functions/Get-IniContent.ps1
+Function Get-IniContent {
+    <#
+    .Synopsis
+        Gets the content of an INI file
 
-#FIXME: Aggiornare la funzione con ultima versione https://github.com/lipkau/PsIni
+    .Description
+        Gets the content of an INI file and returns it as a hashtable
 
-function Get-IniContent {  
-    <#  
-    .Synopsis  
-        Gets the content of an INI file  
-          
-    .Description  
-        Gets the content of an INI file and returns it as a hashtable  
-          
-    .Notes  
-        Author        : Oliver Lipkau <oliver@lipkau.net>  
-        Blog        : http://oliver.lipkau.net/blog/  
-        Source        : https://github.com/lipkau/PsIni 
-                      http://gallery.technet.microsoft.com/scriptcenter/ea40c1ef-c856-434b-b8fb-ebd7a76e8d91 
-        Version        : 1.0 - 2010/03/12 - Initial release  
-                      1.1 - 2014/12/11 - Typo (Thx SLDR) 
-                                         Typo (Thx Dave Stiff) 
-          
-        #Requires -Version 2.0  
-          
-    .Inputs  
-        System.String  
-          
-    .Outputs  
-        System.Collections.Hashtable  
-          
-    .Parameter FilePath  
-        Specifies the path to the input file.  
-          
-    .Example  
-        $FileContent = Get-IniContent "C:\myinifile.ini"  
-        -----------  
-        Description  
-        Saves the content of the c:\myinifile.ini in a hashtable called $FileContent  
-      
-    .Example  
-        $inifilepath | $FileContent = Get-IniContent  
-        -----------  
-        Description  
-        Gets the content of the ini file passed through the pipe into a hashtable called $FileContent  
-      
-    .Example  
-        C:\PS>$FileContent = Get-IniContent "c:\settings.ini"  
-        C:\PS>$FileContent["Section"]["Key"]  
-        -----------  
-        Description  
-        Returns the key "Key" of the section "Section" from the C:\settings.ini file  
-          
-    .Link  
-        Out-IniFile  
-    #>  
-      
-    [CmdletBinding()]  
-    Param(  
-        [ValidateNotNullOrEmpty()]  
-        [ValidateScript({(Test-Path $_) -and ((Get-Item $_).Extension -eq ".ini")})]  
-        [Parameter(ValueFromPipeline=$True,Mandatory=$True)]  
-        [string]$FilePath  
-    )  
-      
-    Begin  
-        {Write-Verbose "$($MyInvocation.MyCommand.Name):: Function started"}  
-          
-    Process  
-    {  
-        Write-Verbose "$($MyInvocation.MyCommand.Name):: Processing file: $Filepath"  
-              
-        $ini = @{}  
-        switch -regex -file $FilePath  
-        {  
-            "^\[(.+)\]$" # Section  
-            {  
-                $section = $matches[1]  
-                $ini[$section] = @{}  
-                $CommentCount = 0  
-            }  
-            "^(;.*)$" # Comment  
-            {  
-                if (!($section))  
-                {  
-                    $section = "No-Section"  
-                    $ini[$section] = @{}  
-                }  
-                $value = $matches[1]  
-                $CommentCount = $CommentCount + 1  
-                $name = "Comment" + $CommentCount  
-                $ini[$section][$name] = $value  
-            }   
-            "(.+?)\s*=\s*(.*)" # Key  
-            {  
-                if (!($section))  
-                {  
-                    $section = "No-Section"  
-                    $ini[$section] = @{}  
-                }  
-                $name,$value = $matches[1..2]  
-                $ini[$section][$name] = $value  
-            }  
-        }  
-        Write-Verbose "$($MyInvocation.MyCommand.Name):: Finished Processing file: $FilePath"  
-        Return $ini  
-    }  
-          
-    End  
-        {Write-Verbose "$($MyInvocation.MyCommand.Name):: Function ended"}  
-} 
+    .Notes
+        Author		: Oliver Lipkau <oliver@lipkau.net>
+		Source		: https://github.com/lipkau/PsIni
+                      http://gallery.technet.microsoft.com/scriptcenter/ea40c1ef-c856-434b-b8fb-ebd7a76e8d91
+        Version		: 1.0.0 - 2010/03/12 - OL - Initial release
+                      1.0.1 - 2014/12/11 - OL - Typo (Thx SLDR)
+                                              Typo (Thx Dave Stiff)
+                      1.0.2 - 2015/06/06 - OL - Improvment to switch (Thx Tallandtree)
+                      1.0.3 - 2015/06/18 - OL - Migrate to semantic versioning (GitHub issue#4)
+                      1.0.4 - 2015/06/18 - OL - Remove check for .ini extension (GitHub Issue#6)
+                      1.1.0 - 2015/07/14 - CB - Improve round-tripping and be a bit more liberal (GitHub Pull #7)
+                                           OL - Small Improvments and cleanup
+                      1.1.1 - 2015/07/14 - CB - changed .outputs section to be OrderedDictionary
+                      1.1.2 - 2016/08/18 - SS - Add some more verbose outputs as the ini is parsed,
+                      				            allow non-existent paths for new ini handling,
+                      				            test for variable existence using local scope,
+                      				            added additional debug output.
 
-function Espelli {    
+        #Requires -Version 2.0
+
+    .Inputs
+        System.String
+
+    .Outputs
+        System.Collections.Specialized.OrderedDictionary
+
+    .Example
+        $FileContent = Get-IniContent "C:\myinifile.ini"
+        -----------
+        Description
+        Saves the content of the c:\myinifile.ini in a hashtable called $FileContent
+
+    .Example
+        $inifilepath | $FileContent = Get-IniContent
+        -----------
+        Description
+        Gets the content of the ini file passed through the pipe into a hashtable called $FileContent
+
+    .Example
+        C:\PS>$FileContent = Get-IniContent "c:\settings.ini"
+        C:\PS>$FileContent["Section"]["Key"]
+        -----------
+        Description
+        Returns the key "Key" of the section "Section" from the C:\settings.ini file
+
+    .Link
+        Out-IniFile
+    #>
+
+    [CmdletBinding()]
+    [OutputType(
+        [System.Collections.Specialized.OrderedDictionary]
+    )]
+    Param(
+        # Specifies the path to the input file.
+        [ValidateNotNullOrEmpty()]
+        [Parameter( Mandatory = $true, ValueFromPipeline = $true )]
+        [String]
+        $FilePath,
+
+        # Specify what characters should be describe a comment.
+        # Lines starting with the characters provided will be rendered as comments.
+        # Default: ";"
+        [Char[]]
+        $CommentChar = @(";"),
+
+        # Remove lines determined to be comments from the resulting dictionary.
+        [Switch]
+        $IgnoreComments
+    )
+
+    Begin {
+        Write-Debug "PsBoundParameters:"
+        $PSBoundParameters.GetEnumerator() | ForEach-Object { Write-Debug $_ }
+        if ($PSBoundParameters['Debug']) {
+            $DebugPreference = 'Continue'
+        }
+        Write-Debug "DebugPreference: $DebugPreference"
+
+        Write-Verbose "$($MyInvocation.MyCommand.Name):: Function started"
+
+        $commentRegex = "^([$($CommentChar -join '')].*)$"
+
+        Write-Debug ("commentRegex is {0}." -f $commentRegex)
+    }
+
+    Process {
+        Write-Verbose "$($MyInvocation.MyCommand.Name):: Processing file: $Filepath"
+
+        $ini = New-Object System.Collections.Specialized.OrderedDictionary([System.StringComparer]::OrdinalIgnoreCase)
+
+        if (!(Test-Path $Filepath)) {
+            Write-Verbose ("Warning: `"{0}`" was not found." -f $Filepath)
+            Write-Output $ini
+        }
+
+        $commentCount = 0
+        switch -regex -file $FilePath {
+            "^\s*\[(.+)\]\s*$" {
+                # Section
+                $section = $matches[1]
+                Write-Verbose "$($MyInvocation.MyCommand.Name):: Adding section : $section"
+                $ini[$section] = New-Object System.Collections.Specialized.OrderedDictionary([System.StringComparer]::OrdinalIgnoreCase)
+                $CommentCount = 0
+                continue
+            }
+            $commentRegex {
+                # Comment
+                if (!$IgnoreComments) {
+                    if (!(test-path "variable:local:section")) {
+                        $section = $script:NoSection
+                        $ini[$section] = New-Object System.Collections.Specialized.OrderedDictionary([System.StringComparer]::OrdinalIgnoreCase)
+                    }
+                    $value = $matches[1]
+                    $CommentCount++
+                    Write-Debug ("Incremented CommentCount is now {0}." -f $CommentCount)
+                    $name = "Comment" + $CommentCount
+                    Write-Verbose "$($MyInvocation.MyCommand.Name):: Adding $name with value: $value"
+                    $ini[$section][$name] = $value
+                }
+                else {
+                    Write-Debug ("Ignoring comment {0}." -f $matches[1])
+                }
+
+                continue
+            }
+            "(.+?)\s*=\s*(.*)" {
+                # Key
+                if (!(test-path "variable:local:section")) {
+                    $section = $script:NoSection
+                    $ini[$section] = New-Object System.Collections.Specialized.OrderedDictionary([System.StringComparer]::OrdinalIgnoreCase)
+                }
+                $name, $value = $matches[1..2]
+                Write-Verbose "$($MyInvocation.MyCommand.Name):: Adding key $name with value: $value"
+                $ini[$section][$name] = $value
+                continue
+            }
+        }
+        Write-Verbose "$($MyInvocation.MyCommand.Name):: Finished Processing file: $FilePath"
+        Write-Output $ini
+    }
+
+    End {
+        Write-Verbose "$($MyInvocation.MyCommand.Name):: Function ended"
+    }
+}
+
+Function Espelli {    
     param ( [string]$label ) 
     Write-Host -NoNewLine "Espulsione disco $label... "
     $vol = Get-WmiObject Win32_Volume -filter "Label = '$label'"
@@ -126,119 +172,56 @@ function Espelli {
     }
 }
 
-function InvioEmail {
-    param( [string]$from, [string]$to, [string]$subject, [string]$body,[string]$attachmentPath,[string]$server,[string]$serverPort,[string]$enableSSL )
+Function Comprimi {
+    param ( [string]$FileName ) 
+    Write-Host -NoNewLine "Compressing log file... "
+    If (Test-Path 'logs.zip') { Remove-Item 'logs.zip' }
+    $sz_args =  ' a -tzip -mx9 -y logs.zip ' + '"' + $FileName + '"'
+    $process = (Start-Process -FilePath "7za.exe" -PassThru -Wait -ArgumentList $sz_args)
+    If ( $process.ExitCode -eq 0 ) { Write-Host "done." } else {  Write-Host 'ERRORE' $process.ExitCode }
+}
 
-    #Non funzionava con Aruba che utilizza Implicit SSL
-    #fix: http://nicholasarmstrong.com/2009/12/sending-email-with-powershell-implicit-and-explicit-ssl/
-
-    #Sostituisco #computername# nell'oggetto
-    $subject -replace "#computername#","$env:computername"
+Function InvioEmail {
+    param ( [string]$To, [string]$Subject, [string]$Body, [string]$Attachment ) 
 
     #Controllo file Credenziali
     If (Test-Path $emailCredentialsFile) {
         $emailCredentials = Import-CliXml $emailCredentialsFile
     } else {
-        $emailCredentials = Get-Credential -Message "Inserire credenziali per $emailSmtpServer" | Export-CliXml $emailCredentialsFile
+        $emailCredentials = Get-Credential -Message "Please enter login information for $emailSmtpServer" | Export-CliXml $emailCredentialsFile
         $emailCredentials = Import-CliXml $emailCredentialsFile
     }
-    $credentials = [Net.NetworkCredential]($emailCredentials)
 
-    
-    if ($enableSSL -eq '0') {
-        # Set up server connection
-        $smtpClient = New-Object System.Net.Mail.SmtpClient $server, $serverPort
-        $smtpClient.EnableSsl = $false
-        $smtpClient.Timeout = $timeout
-        $smtpClient.UseDefaultCredentials = $false;
-        $smtpClient.Credentials = $credentials
-
-        $message = New-Object System.Net.Mail.MailMessage $from, $to, $subject, $body
-
-        # Allegato
-        if ($attachmentPath -ne '') {
-            $attachment = New-Object System.Net.Mail.Attachment $attachmentPath
-            $message.Attachments.Add($attachment)            
+    #Supporto destinatari multipli
+    $To.Split(';') | ForEach {
+        $mailsplat = @{
+            To=$_
+            From=$emailFrom
+            Body=$Body
+            Subject=$Subject
+            SmtpServer=$emailSmtpServer
+            Port=$emailSmtpPort            
+            Credential = $emailCredentials
         }
 
-        # Send the message
-        Write-Host -NoNewline "Invio email a $to... "
-        try
-        {
-            $smtpClient.Send($message)
-            Write-Output "Inviato."
-        }
-        catch
-        {
+        if ($Attachment -ne '') { $mailsplat.Add('Attachments', $Attachment) }
+        if ([boolean]$emailSmtpSSL) { $mailsplat.Add('UseSsl', [bool]1) }
+        
+        Write-Host -NoNewline "Sending email to $_... "
+        try {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { return $true }
+            Send-MailMessage @mailsplat
+            Write-Host "Sent."
+        } catch {
             Write-Error $_
-            Write-Output "ERRORE."
-        }
-    } else {
-        # Load System.Web assembly
-        [System.Reflection.Assembly]::LoadWithPartialName("System.Web") > $null
-
-        # Create a new mail with the appropriate server settigns
-        $mail = New-Object System.Web.Mail.MailMessage
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpserver", $server)
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpserverport", $serverPort)
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpusessl", $true)
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendusername", $credentials.UserName)
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendpassword", $credentials.Password)
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout", $timeout / 1000)
-        # Use network SMTP server...
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/sendusing", 2)
-        # ... and basic authentication
-        $mail.Fields.Add("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate", 1)
-
-        # Set up the mail message fields
-        $mail.From = $from
-        $mail.To = $to
-        $mail.Subject = $subject
-        $mail.Body = $body
-
-        # Allegato
-        if ($attachmentPath -ne '') {
-            # Convert to full path and attach file to message
-            $attachmentPath = (get-item $attachmentPath).FullName
-            $attachment = New-Object System.Web.Mail.MailAttachment $attachmentPath
-            $mail.Attachments.Add($attachment) > $null
+            Write-Output "ERROR."
         }
 
-        # Send the message
-        Write-Host -NoNewline "Invio email a $to... "
-        try
-        {
-            [System.Web.Mail.SmtpMail]::Send($mail)
-            Write-Host  "Inviato."
-        }
-        catch
-        {
-            Write-Error $_
-            Write-Host  "ERRORE."
-        }
+
     }
 }
 
-function Comprimi {
-    param ( [string]$FileName ) 
-    Write-Host -NoNewLine "Compressione file di log... "
-    If (Test-Path 'logs.zip') { Remove-Item 'logs.zip' }
-    $sz_args =  ' a -tzip -mx9 -y logs.zip ' + '"' + $FileName + '"'
-    $process = (Start-Process -FilePath "7za.exe" -PassThru -Wait -ArgumentList $sz_args)
-    If ( $process.ExitCode -eq 0 ) { Write-Host "Ok!" } else {  Write-Host 'ERRORE' $process.ExitCode }
-}
-
-# -------------------------------------------------- Variabili task
-
-#FIXME: $LogGeneral = Join-Path $LogPath 'Gen.log' /PER UNIRE I PERCORSI - Elegante
-
-#FIXME: Controllo se è stato lanciato correttamente con i diritti di admin http://ramblingcookiemonster.github.io/Task-Scheduler/
-
-#$CurrentDir = (Get-Item -Path ".\" -Verbose).FullName
-#$Date = Get-Date
-#$Admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")
-#$Whoami = whoami
-#"$Date - Admin=$Admin User=$Whoami Cd=$CurrentDir" | Out-File "AdminLog.txt" -Append
+# -------------------------------------------------- Lettura parametri
 
 $inifile = $nomeTask + '.ini'
 $conf = Get-IniContent $inifile
@@ -256,66 +239,51 @@ $usbDayToEject = $conf['usb']['EjectDay']
 $shutdown = $conf['varie']['shutdown']
 $servstop = $conf['varie']['stopservice']
 
-$Folder = "..\Logs"
-$emailCredentialsFile = 'email-auth.xml'
-
-$ServiceWasRunning = $false
+$emailEnable = $emailEnable.ToUpper()
+$LogFolder = "..\Logs"
+$emailCredentialsFile = $nomeTask + '-auth.xml'
 
 # -------------------------------------------------- Inizio programma 
 
 #Modalità test email
-$emailEnable = $emailEnable.ToUpper()
 If ( $emailEnable -eq "TEST" ) {
-
-    Write-Host "--------------------"
-    Write-Host "MODALITA' TEST EMAIL"
-    Write-Host "--------------------"
-
-    $msgSubject = "Backup [$nomeTask]: Test email"
+    Write-Host "---------------"
+    Write-Host "EMAIL TEST MODE"
+    Write-Host "---------------"
+    $msgSubject = "$emailSubjPrefix [$nomeTask]: Avvisi"
     $msgBody = @'
 ______________________________________________________________
-|01/01/2016 - TestEMAIL: Sincronizzazione test test
+|01/01/2016 - $nomeTask: Avvisi
 |
 |    Oggetti processati: 999.999 (99.9 GB)
 |    Tempo totale: 09:09:09
 |_____________________________________________________________
 '@     
-    Write-Host -NoNewLine "Creazione finto file di log... "
-    for($i=1; $i -le 1000 ;  $i++){ Add-Content 'TestLog.txt' $msgBody }
-    for($i=1; $i -le 2000 ;  $i++){ Get-Random | Add-Content 'TestLog.txt' }
-    Write-Host "Ok."
+    Write-Host -NoNewLine "Creating fake log file... "
+    for($i=1; $i -le 100 ;  $i++){ Add-Content 'TestLog.txt' $msgBody }
+    for($i=1; $i -le 500 ;  $i++){ Get-Random | Add-Content 'TestLog.txt' }
+    Write-Host "done."
     Comprimi('TestLog.txt')
     Remove-Item('TestLog.txt')
 
-    if ($emailTo.Contains(';')) {
-        #Invio destinatari multipli
-        $emailTo.Split(';') | ForEach {
-            InvioEmail $emailFrom $_ "$msgSubject" "$msgBody" logs.zip $emailSmtpServer $emailSmtpPort $emailSmtpSSL
-        }
-    } else {
-       #Invio singolo
-       InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" logs.zip $emailSmtpServer $emailSmtpPort $emailSmtpSSL       
-    }
-
+    InvioEmail -To $emailTo -Subject "$msgSubject" -Body "$msgBody" -Attachment "logs.zip"
     
-    
-    Read-Host -Prompt "Premere INVIO per uscire."    
+    Read-Host -Prompt "Press ENTER to quit"
     Exit
 }
-
 
 #Stop del servizio
 If ($servstop -ne '') {
     $srvObj = Get-Service -displayName $servstop
     If ( $srvObj.Status -eq 'Running' ) {
-        Write-Host "Stop servizio  $servstop"
+        Write-Host "Stopping service $servstop"
         $ServiceWasRunning = $true
         Stop-Service -displayName $servstop
     }
 }
 
 #Esecuzione FreeFileSync
-Write-Host -NoNewLine "Esecuzione FreeFileSync... "
+Write-Host -NoNewLine "Executing FreeFileSync... "
 $ffs_args =  "fbackup\$nomeTask.ffs_batch"
 $process = Start-Process -FilePath "FreeFileSync.exe" -PassThru -Wait -WorkingDirectory ".." -ArgumentList $ffs_args -Verb runAs
 $ffsReturnCode = $process.ExitCode
@@ -328,22 +296,22 @@ switch ($ffsReturnCode) {
     0 { $msgSubject = "$emailSubjPrefix [$nomeTask]: Completato con successo" }
     default { $msgSubject = "$emailSubjPrefix [$nomeTask]: Errore" }
 }
-Write-Host "Fatto ($ffsReturnCode)"
+Write-Host "Done ($ffsReturnCode)"
 
 #Start servizio
 If ($ServiceWasRunning) {
-    Write-Host "Start servizio  $servstop"
+    Write-Host "Starting service $servstop"
     Start-Service -displayName $servstop    
 }
 
 #Cerco l'ultimo file di log
-Write-Host -NoNewLine "Ricerca nuovo file... "
-Get-ChildItem -Path "$Folder" -Filter "$nomeTask*log" | Sort LastWriteTime –Descending | Select -First 1 | Foreach-Object { $LastLogFile = $_.Name }
+Write-Host -NoNewLine "Searching for latest logfile... "
+Get-ChildItem -Path "$LogFolder" -Filter "$nomeTask*log" | Sort LastWriteTime –Descending | Select -First 1 | Foreach-Object { $LastLogFile = $_.Name }
 $LastLogFile = $LastLogFile.Trim()
 Write-Host $LastLogFile
-$LastLogFile = $Folder + '\' + $LastLogFile
+$LastLogFile = $LogFolder + '\' + $LastLogFile
 
-#Creazione corpo messaggio
+#Creazione corpo messaggio -> $msgBody
 $Write = 0
 $msgBody = ''
 $lines = Get-Content -LiteralPath $LastLogFile
@@ -354,10 +322,10 @@ ForEach ($line in $lines) {
     if ($line -match "\|____" ) { break }
 }
 
-#Logica invio mail - controllo se devo spedire
+#Logica invio mail - controllo se devo spedire -> $toSend
 $toSend = $false
 If ($emailEnable -eq 'EVERYTIME') { $toSend = $true }
-If ($emailEnable -eq 'ONLYERROR') { if ($ffs_process.ExitCode -ne 0) { $toSend = $true } }
+If ($emailEnable -eq 'ONLYERROR') { if ($ffsReturnCode -ne 0) { $toSend = $true } }
 
 #Logica invio mail - allego solo se errore - spedisco a $emailCcnErr
 if ($ffsReturnCode -eq 0) {
@@ -365,21 +333,13 @@ if ($ffsReturnCode -eq 0) {
 } else {
     Comprimi($LastLogFile)
     $attachment = (Resolve-Path .\).Path + '\logs.zip'
-    If ($emailToCcnErr -ne '') { InvioEmail $emailFrom $emailToCcnErr "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL }
+    If ($emailToCcnErr -ne '') { InvioEmail -To $emailToCcnErr -Subject "$msgSubject" -Body "$msgBody" -Attachment $attachment }
 }
 
 #Invio email
 if ($toSend) {    
-    if ($emailTo.Contains(';')) {
-        #Invio destinatari multipli
-        $emailTo.Split(';') | ForEach {
-            InvioEmail $emailFrom $_ "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL
-        }
-    } else {
-        #Invio singolo
-       InvioEmail $emailFrom $emailTo "$msgSubject" "$msgBody" $attachment $emailSmtpServer $emailSmtpPort $emailSmtpSSL
-    }
- }
+    InvioEmail -To $emailTo -Subject "$msgSubject" -Body "$msgBody" -Attachment $attachment
+}
 
 #Espulsione unità usb
 if ($usbDayToEject -eq (Get-Date).DayOfWeek -Or $usbDayToEject -eq 0 ) {
