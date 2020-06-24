@@ -164,11 +164,10 @@ Function Espelli {
     Write-Host -NoNewLine "Espulsione disco $label... "
     $vol = Get-WmiObject Win32_Volume -filter "Label = '$label'"
     if ($vol -ne $null) {
-        $Eject =  New-Object -comObject Shell.Application
-        $Eject.NameSpace(17).ParseName($vol.driveletter).InvokeVerb("Eject")
-        Write-Host "Fatto"
+        Start-Process -FilePath "RemoveDrive.exe" -ArgumentList $vol.DriveLetter
+        Write-Host "Done"
     } else {
-        Write-Host "Unita non trovata"
+        Write-Host "Label not found"
     }
 }
 
