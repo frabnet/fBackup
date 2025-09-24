@@ -131,7 +131,7 @@ function Send-Email {
     $port          = [int]$Config.Config.Port
     $useSSL        = $Config.Config.UseSSL.ToLower() -eq 'true'
     $from          = $Config.Config.From
-    $to            = $Config.Config.To
+    $to            = ($Config.Config.To -split '[;,]' | ForEach-Object { $_.Trim() }) -ne ''
     $user          = $Config.Config.User
     $encryptedPass = $Config.Config.Password
     $prefix        = $Config.Config.SubjectPrefix
