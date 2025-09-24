@@ -163,7 +163,7 @@ function Send-Email {
     $mailParams = @{
         From       = $from
         To         = $to
-        Subject    = "$($prefix)$($Subject)"
+        Subject    = "$($prefix) $($Subject)"
         Body       = $Body
         SmtpServer = $smtp
         Port       = $port
