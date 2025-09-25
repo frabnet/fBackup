@@ -337,7 +337,12 @@ if ($shouldSend) {
     Write-Host "Preparing report email for task '$($TaskName)'..."
 
     # Build subject
-    $subject = "$($SubjectPrefix) - $($TaskName): $($result)"
+    switch ($exitCode) {
+        0 { $subject = "$($SubjectPrefix) - $($TaskName): Success" }
+        1 { $subject = "$($SubjectPrefix) - $($TaskName): Warning" }
+        2 { $subject = "$($SubjectPrefix) - $($TaskName): Errors"  }
+        default { $subject = "$($SubjectPrefix) - $($TaskName): Unknown" }
+    }
 
     # Build body
     switch ($exitCode) {
@@ -359,7 +364,7 @@ if ($shouldSend) {
         }
     }
 
-    $sent = Send-Email -Config $config -Subject $subject -Body $body -AttachmentPath $attachments
+    $sent = Send-Email -Config $config -Subject $subject -Body $body -AttachmentPaths $attachments
     if ($sent) {
         # Remove zipLog
         if ($zipLog) {
